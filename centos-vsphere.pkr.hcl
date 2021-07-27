@@ -8,16 +8,6 @@ variable "iso_url" {
   default = "[datastore1] ISOs/CentOS-8.3.2011-x86_64-dvd1.iso"
 }
 
-variable "packer_host" {
-  type    = string
-  default = "192.168.1.72"
-}
-
-variable "packer_webport" {
-  type    = string
-  default = "80"
-}
-
 variable "vm-cpu-num" {
   type    = string
   default = "1"
@@ -67,7 +57,7 @@ source "vsphere-iso" "k8stemplate" {
   CPUs                 = "${var.vm-cpu-num}"
   RAM                  = "${var.vm-mem-size}"
   RAM_reserve_all      = false
-  boot_command         = ["<tab> text ks=http://${var.packer_host}:${var.packer_webport}/root/mehlj-packer/-/raw/master/ks.cfg<enter><wait>"]
+  boot_command         = ["<tab> text ks=https://raw.githubusercontent.com/mehlj/mehlj-packer/master/ks.cfg<enter><wait>"]
   boot_order           = "disk,cdrom"
   boot_wait            = "10s"
   convert_to_template  = true
