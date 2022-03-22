@@ -51,6 +51,7 @@ variable "vsphere-user" {
 locals {
   admin-password = aws_secretsmanager("mehlj_lab_creds", "vsphere")
   ssh-password   = aws_secretsmanager("mehlj_lab_creds", "ssh")
+  vault-password = aws_secretsmanager("mehlj_lab_creds", "vault")
 }
 
 source "vsphere-iso" "k8stemplate" {
@@ -70,7 +71,7 @@ source "vsphere-iso" "k8stemplate" {
     network      = "${var.vsphere-network}"
     network_card = "vmxnet3"
   }
-  notes        = "Kubernetes host. Image built via Packer."
+  notes        = "Kubernetes cluster node template. Built via Packer."
   password     = "${local.admin-password}"
   ssh_password = "${local.ssh-password}"
   ssh_username = "mehlj"
@@ -86,4 +87,22 @@ source "vsphere-iso" "k8stemplate" {
 build {
   sources = ["source.vsphere-iso.k8stemplate"]
 
+  # stage the ansible vault pass file for later usage
+  provisioner "file" {
+    content         = "${local.vault-password}"
+    destination     = "/root/.vault_pass.txt"
+  }
+
+  # configure SSH keys
+  provisioner "ansible" {
+    command         = "./ansible-wrapper.sh"
+    playbook_file   = "./mehlj-ansible/playbooks/ssh.yml"
+  }
+
+  # configure kubernetes prerequisites
+  provisioner "ansible" {
+    command         = "./ansible-wrapper.sh"
+    playbook_file   = "./mehlj-ansible/playbooks/kubernetes.yml"
+    extra_arguments = ["--vault-password-file=/root/.vault_pass.txt"]
+  }
 }
